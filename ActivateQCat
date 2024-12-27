@@ -1,0 +1,79 @@
+from braket.circuits import Circuit
+from braket.devices import LocalSimulator
+import numpy as np
+import time
+from datetime import datetime
+
+def create_simple_cat():
+   base_cat = [
+       "      .-----------------------.",
+       "     /                       /|",
+       "    /                       / |",
+       "   /_______________________/  |",
+       "  |                        |  |",
+       "  |        /\_____/\       |  |",
+       "  |       /  o   o  \      |  |",
+       "  |      ( ==  ^  == )     |  |",
+       "  |       )         (      |  |",
+       "  |      (           )     |  |",
+       "  |     ( (  )   (  ) )    |  |",
+       "  |    (__(__)___(__)__)   | / ",
+       "  |________________________|/  "
+   ]
+   
+   circuit = Circuit()
+   qubits = 24
+   
+   for i in range(qubits):
+       circuit.h(i)
+       if i > 0:
+           circuit.cnot(i-1, i)
+   
+   device = LocalSimulator()
+   result = device.run(circuit, shots=1).result()
+   measured = list(result.measurement_probabilities.keys())[0]
+   
+   values = np.array([int(b) for b in measured])
+   chars = "o^="
+   
+   art = []
+   char_idx = 0
+   special_chars = {"/", "\\", "(", ")", "_", "|", ".", "-", " "}
+   
+   for line in base_cat:
+       new_line = ""
+       for char in line:
+           if char in special_chars:
+               new_line += char
+           elif char in chars:
+               val = values[char_idx % len(values)]
+               new_line += chars[val % len(chars)]
+               char_idx += 1
+           else:
+               new_line += char
+       art.append(new_line)
+   
+   return "\n".join(art)
+
+def run_quantum_cats(iterations=1000):
+   results = []
+   start_time = time.time()
+   
+   for i in range(iterations):
+       cat_art = create_simple_cat()
+       results.append(cat_art)
+       
+       if (i + 1) % 100 == 0:
+           print(f"Progress: {i+1}/{iterations}")
+           
+   end_time = time.time()
+   print(f"Total time: {end_time - start_time:.2f} seconds")
+   
+   timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+   with open(f'quantum_cats_{timestamp}.txt', 'w') as f:
+       for i, art in enumerate(results):
+           f.write(f"\nIteration {i+1}:\n{art}\n")
+           f.write("-" * 50 + "\n")
+   
+   return results
+results = run_quantum_cats(1000)
